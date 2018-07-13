@@ -1938,19 +1938,19 @@ class ViewTest extends TestCase {
 		$path = 'test_file_put_contents.txt';
 		/** @var Temporary | \PHPUnit_Framework_MockObject_MockObject $storage */
 		$storage = $this->getMockBuilder(Temporary::class)
-			->setMethods(['fopen'])
+			->setMethods(['writeFile'])
 			->getMock();
 
 		Filesystem::mount($storage, [], $this->user . '/');
 		$storage->mkdir('files');
 
 		$storage->expects($this->once())
-			->method('fopen')
+			->method('writeFile')
 			->will($this->returnCallback(
 				function () use ($view, $path, &$lockTypeDuring) {
 					$lockTypeDuring = $this->getFileLockType($view, $path);
 
-					return \fopen('php://temp', 'r+');
+					return 1;
 				}
 			));
 
@@ -2649,24 +2649,5 @@ class ViewTest extends TestCase {
 		$this->assertFalse($cache->inCache('foo/foo.txt'));
 		$this->assertNotEquals($rootInfo->getEtag(), $newInfo->getEtag());
 		$this->assertEquals(0, $newInfo->getSize());
-	}
-
-	public function testFopenFail() {
-		// since stream wrappers influence the streams,
-		// this test makes sure that all stream wrappers properly return a failure
-		// to the caller instead of wrapping the boolean
-		/** @var Temporary | \PHPUnit_Framework_MockObject_MockObject $storage */
-		$storage = $this->getMockBuilder(Temporary::class)
-			->setMethods(['fopen'])
-			->getMock();
-
-		$storage->expects($this->once())
-			->method('fopen')
-			->willReturn(false);
-
-		Filesystem::mount($storage, [], '/');
-		$view = new View('/files');
-		$result = $view->fopen('unexist.txt', 'r');
-		$this->assertFalse($result);
 	}
 }
